@@ -15,34 +15,39 @@ impl VulkanApp {
         };
         let create_info: vk::InstanceCreateInfo;
         if ENABLE_VALIDATION_LAYER {
-            let pp_enabled_layer_names = {
-                let mut layers = vec![];
-                for i in REQUIRED_VALIDATION_LAYERS.iter() {
-                    // i is &&str, so i dereference it one time
-                    layers.push(CString::new(*i).unwrap().into_raw() as *const c_char);
-                }
-                layers
-            }
-            .as_ptr();
+            let enabled_layer_names: Vec<CString> = REQUIRED_VALIDATION_LAYERS
+                .iter()
+                .map(|&i| CString::new(i).unwrap())
+                .collect();
+            let pp_enabled_layer_names: Vec<*const c_char> =
+                enabled_layer_names.iter().map(|s| s.as_ptr()).collect();
+            let pp_enabled_layer_names = pp_enabled_layer_names.as_ptr();
             create_info = vk::InstanceCreateInfo {
                 p_application_info: &app_info,
                 enabled_layer_count: REQUIRED_VALIDATION_LAYERS.len() as u32,
                 pp_enabled_layer_names,
                 ..Default::default()
             };
+
+		    if ENABLE_VALIDATION_LAYER && !VulkanApp::check_validation_layer_support(entry) {
+		        panic!("Validation layer required but not available");
+		    }
+		    unsafe {
+		        return entry
+		            .create_instance(&create_info, None)
+		            .expect("Failed to create instance")
+		    }
+
         } else {
             create_info = vk::InstanceCreateInfo {
                 p_application_info: &app_info,
                 ..Default::default()
             };
-        }
-        if ENABLE_VALIDATION_LAYER && !VulkanApp::check_validation_layer_support(entry) {
-            panic!("Validation layer required but not available");
-        }
-        unsafe {
-            entry
-                .create_instance(&create_info, None)
-                .expect("Failed to create instance")
+           	unsafe {
+		        return entry
+		            .create_instance(&create_info, None)
+		            .expect("Failed to create instance")
+		    }
         }
     }
 }
