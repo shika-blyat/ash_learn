@@ -1,16 +1,25 @@
-use ash::{Entry, Instance, vk::{DebugUtilsMessengerEXT}};
+use ash::vk::DebugUtilsMessengerEXT;
 //use crate::utility::instance::create_instance;
 pub struct VulkanApp {
-    pub entry: Entry,
-    pub instance: Instance,
-    //pub debug_utils_messenger: DebugUtilsMessengerEXT,
+    _entry: ash::Entry,
+    pub instance: ash::Instance,
+    pub debug_utils_loader: ash::extensions::ext::DebugUtils,
+    pub debug_merssager: DebugUtilsMessengerEXT,
 }
+
 impl VulkanApp {
-    pub fn new() -> Self {
-        let entry = Entry::new().expect("Failed to create entry for instance creation");
+    pub fn new() -> VulkanApp {
+        // init vulkan stuff
+        let entry = ash::Entry::new().unwrap();
         let instance = VulkanApp::create_instance(&entry);
-        let debug_utils_messenger = VulkanApp::get_debug_messenger(&entry, &instance);
-        Self { entry, instance }
+        let (debug_utils_loader, debug_merssager) = VulkanApp::setup_debug_utils(&entry, &instance);
+
+        VulkanApp {
+            _entry: entry,
+            instance,
+            debug_utils_loader,
+            debug_merssager,
+        }
     }
     pub fn run(&self) {
         self.run_loop();

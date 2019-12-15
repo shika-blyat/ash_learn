@@ -1,69 +1,125 @@
 use crate::utility::{common::*, constants::*, vulkanapp::VulkanApp};
-use std::ffi::CStr;
-use std::os::raw::c_void;
+use std::{ffi::CStr, os::raw::c_void, ptr};
+
 use ash::{
-    version::EntryV1_0,
+    extensions::ext::DebugUtils,
+    version::{EntryV1_0, InstanceV1_0},
     vk::{
         Bool32, DebugUtilsMessageSeverityFlagsEXT, DebugUtilsMessageTypeFlagsEXT,
-        DebugUtilsMessengerCallbackDataEXT, DebugUtilsMessengerEXT,
-        DebugUtilsMessengerCreateInfoEXT, StructureType, AllocationCallbacks,
-        FALSE as VK_FALSE, TRUE as VK_TRUE,
+        DebugUtilsMessengerCallbackDataEXT, DebugUtilsMessengerCreateFlagsEXT,
+        DebugUtilsMessengerCreateInfoEXT, DebugUtilsMessengerEXT, StructureType, FALSE as VK_FALSE,
     },
-    extensions::ext::DebugUtils,
-    Entry,
-    Instance
 };
 
 impl VulkanApp {
-    pub fn check_validation_layer_support(entry: &Entry) -> bool {
-        let layer_properties = entry.enumerate_instance_layer_properties().unwrap();
-        for layer_name in REQUIRED_VALIDATION_LAYERS.iter() {
-            let mut layer_found = false;
+    pub fn check_validation_layer_support(entry: &ash::Entry) -> bool {
+        // if support validation layer, then return true
+
+        let layer_properties = entry
+            .enumerate_instance_layer_properties()
+            .expect("Failed to enumerate Instance Layers Properties!");
+
+        if layer_properties.len() <= 0 {
+            eprintln!("No available layers.");
+            return false;
+        } else {
+            println!("Instance Available Layers: ");
             for layer in layer_properties.iter() {
-                if layer_name == &c_char_to_str(layer.layer_name.to_vec()).as_str() {
-                    layer_found = true;
+                let layer_name = c_char_to_str(layer.layer_name.to_vec());
+                println!("\t{}", layer_name);
+            }
+        }
+
+        for required_layer_name in REQUIRED_VALIDATION_LAYERS.iter() {
+            let mut is_layer_found = false;
+
+            for layer_property in layer_properties.iter() {
+                let test_layer_name = c_char_to_str(layer_property.layer_name.to_vec());
+                if (*required_layer_name) == test_layer_name {
+                    is_layer_found = true;
+                    break;
                 }
             }
-            if !layer_found {
+
+            if is_layer_found == false {
                 return false;
             }
         }
+
         true
     }
-    pub fn get_debug_messenger_info() -> DebugUtilsMessengerCreateInfoEXT {
-        DebugUtilsMessengerCreateInfoEXT{
-            s_type: StructureType::DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT,
-            pfn_user_callback: Some(VulkanApp::debug_callback),
-            message_severity: DebugUtilsMessageSeverityFlagsEXT::WARNING |
-                DebugUtilsMessageSeverityFlagsEXT::VERBOSE |
-                DebugUtilsMessageSeverityFlagsEXT::INFO |
-                DebugUtilsMessageSeverityFlagsEXT::ERROR,
-            message_type: DebugUtilsMessageTypeFlagsEXT::GENERAL
-                | DebugUtilsMessageTypeFlagsEXT::PERFORMANCE
-                | DebugUtilsMessageTypeFlagsEXT::VALIDATION,
-            ..Default::default()
-        }
-    }
-    pub fn get_debug_messenger(
-        entry: &Entry,
-        instance: &Instance,
-    ) -> DebugUtilsMessengerEXT {
-        let debug_utils_loader = DebugUtils::new(entry, instance);
-        let messenger_ci = VulkanApp::get_debug_messenger_info();
 
-        unsafe {
-            debug_utils_loader
-                .create_debug_utils_messenger(&messenger_ci, None)
-                .expect("Debug Utils Callback")
+    pub fn setup_debug_utils(
+        entry: &ash::Entry,
+        instance: &ash::Instance,
+    ) -> (ash::extensions::ext::DebugUtils, DebugUtilsMessengerEXT) {
+        let debug_utils_loader = DebugUtils::new(entry, instance);
+
+        if !ENABLE_VALIDATION_LAYER {
+            (debug_utils_loader, ash::vk::DebugUtilsMessengerEXT::null())
+        } else {
+            let messenger_ci = populate_debug_messenger_create_info();
+
+            let utils_messenger = unsafe {
+                debug_utils_loader
+                    .create_debug_utils_messenger(&messenger_ci, None)
+                    .expect("Debug Utils Callback")
+            };
+
+            (debug_utils_loader, utils_messenger)
         }
     }
-    unsafe extern "system" fn debug_callback(
-        _message_severity: DebugUtilsMessageSeverityFlagsEXT,
-        _message_type: DebugUtilsMessageTypeFlagsEXT,
-        pcallback_data: *const DebugUtilsMessengerCallbackDataEXT,
-        _p_user_data: *mut c_void,
-    ) -> Bool32 {
-        eprintln!("validation layer: {:#?}", CStr::from_ptr((*pcallback_data).p_message));
-        VK_FALSE
+}
+pub fn populate_debug_messenger_create_info() -> DebugUtilsMessengerCreateInfoEXT {
+    DebugUtilsMessengerCreateInfoEXT {
+        s_type: StructureType::DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT,
+        p_next: ptr::null(),
+        flags: DebugUtilsMessengerCreateFlagsEXT::empty(),
+        message_severity: DebugUtilsMessageSeverityFlagsEXT::WARNING |
+            // DebugUtilsMessageSeverityFlagsEXT::VERBOSE |
+            // DebugUtilsMessageSeverityFlagsEXT::INFO |
+            DebugUtilsMessageSeverityFlagsEXT::ERROR,
+        message_type: DebugUtilsMessageTypeFlagsEXT::GENERAL
+            | DebugUtilsMessageTypeFlagsEXT::PERFORMANCE
+            | DebugUtilsMessageTypeFlagsEXT::VALIDATION,
+        pfn_user_callback: Some(vulkan_debug_utils_callback),
+        p_user_data: ptr::null_mut(),
     }
+}
+
+impl Drop for VulkanApp {
+    fn drop(&mut self) {
+        unsafe {
+            if ENABLE_VALIDATION_LAYER {
+                self.debug_utils_loader
+                    .destroy_debug_utils_messenger(self.debug_merssager, None);
+            }
+            self.instance.destroy_instance(None);
+        }
+    }
+}
+
+unsafe extern "system" fn vulkan_debug_utils_callback(
+    message_severity: DebugUtilsMessageSeverityFlagsEXT,
+    message_type: DebugUtilsMessageTypeFlagsEXT,
+    p_callback_data: *const DebugUtilsMessengerCallbackDataEXT,
+    _p_user_data: *mut c_void,
+) -> Bool32 {
+    let severity = match message_severity {
+        DebugUtilsMessageSeverityFlagsEXT::VERBOSE => "[Verbose]",
+        DebugUtilsMessageSeverityFlagsEXT::WARNING => "[Warning]",
+        DebugUtilsMessageSeverityFlagsEXT::ERROR => "[Error]",
+        DebugUtilsMessageSeverityFlagsEXT::INFO => "[Info]",
+        _ => "[Unknown]",
+    };
+    let types = match message_type {
+        DebugUtilsMessageTypeFlagsEXT::GENERAL => "[General]",
+        DebugUtilsMessageTypeFlagsEXT::PERFORMANCE => "[Performance]",
+        DebugUtilsMessageTypeFlagsEXT::VALIDATION => "[Validation]",
+        _ => "[Unknown]",
+    };
+    let message = CStr::from_ptr((*p_callback_data).p_message);
+    println!("[Debug]{}{}{:?}", severity, types, message);
+
+    VK_FALSE
 }

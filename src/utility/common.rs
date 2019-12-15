@@ -10,6 +10,3 @@ pub fn c_char_to_str<'a>(char_vec: Vec<c_char>) -> String {
         s
     }
 }
-pub fn str_to_c_char<'a>(string: &'a str) -> *const c_char {
-    CString::new(string).unwrap().as_ptr()
-}
