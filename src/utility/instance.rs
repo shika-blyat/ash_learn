@@ -1,11 +1,22 @@
 use crate::utility::{common::*, vulkanapp::VulkanApp};
 use ash::{version::EntryV1_0, vk, vk_make_version, Entry, Instance};
 use std::{ffi::CString, os::raw::c_char};
+use crate::utility::constants::*;
+#[cfg(all(debug_assertions, target_os = "windows"))]
 
-#[cfg(debug_assertions)]
-const ENABLE_VALIDATION_LAYER: bool = true;
-#[cfg(not(debug_assertions))]
-const ENABLE_VALIDATION_LAYER: bool = false;
+use ash::extensions::khr::Win32Surface;
+#[cfg(all(
+    debug_assertions,
+    unix,
+    not(target_os = "android"),
+    not(target_os = "macos")
+))]
+
+use ash::extensions::khr::XlibSurface;
+#[cfg(all(debug_assertions, target_os = "macos"))]
+use ash::extensions::mvk::MacOSSurface;
+
+use ash::extensions::{ext::DebugUtils, khr::Surface};
 
 impl VulkanApp {
     pub fn create_instance(entry: &Entry) -> Instance {
@@ -22,32 +33,46 @@ impl VulkanApp {
             let pp_enabled_layer_names: Vec<*const c_char> =
                 enabled_layer_names.iter().map(|s| s.as_ptr()).collect();
             let pp_enabled_layer_names = pp_enabled_layer_names.as_ptr();
+            let enabled_extension_names = vec![
+                Surface::name(),
+                #[cfg(all(windows))]
+                Win32Surface::name(),
+                #[cfg(all(unix, not(target_os = "android"), not(target_os = "macos")))]
+                XlibSurface::name(),
+                #[cfg(target_os = "macos")]
+                MacOSSurface::name(),
+                DebugUtils::name(),
+            ];
+            let pp_enabled_extension_names: Vec<*const c_char> =
+                enabled_extension_names.iter().map(|s| s.as_ptr()).collect();
+
             create_info = vk::InstanceCreateInfo {
                 p_application_info: &app_info,
                 enabled_layer_count: REQUIRED_VALIDATION_LAYERS.len() as u32,
                 pp_enabled_layer_names,
+                enabled_extension_count: pp_enabled_extension_names.len() as u32,
+                pp_enabled_extension_names: pp_enabled_extension_names.as_ptr(),
                 ..Default::default()
             };
 
-		    if ENABLE_VALIDATION_LAYER && !VulkanApp::check_validation_layer_support(entry) {
-		        panic!("Validation layer required but not available");
-		    }
-		    unsafe {
-		        return entry
-		            .create_instance(&create_info, None)
-		            .expect("Failed to create instance")
-		    }
-
+            if ENABLE_VALIDATION_LAYER && !VulkanApp::check_validation_layer_support(entry) {
+                panic!("Validation layer required but not available");
+            }
+            unsafe {
+                return entry
+                    .create_instance(&create_info, None)
+                    .expect("Failed to create instance");
+            }
         } else {
             create_info = vk::InstanceCreateInfo {
                 p_application_info: &app_info,
                 ..Default::default()
             };
-           	unsafe {
-		        return entry
-		            .create_instance(&create_info, None)
-		            .expect("Failed to create instance")
-		    }
+            unsafe {
+                return entry
+                    .create_instance(&create_info, None)
+                    .expect("Failed to create instance");
+            }
         }
     }
 }

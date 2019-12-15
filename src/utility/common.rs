@@ -1,7 +1,5 @@
 use std::{ffi::CString, os::raw::c_char};
 
-pub const REQUIRED_VALIDATION_LAYERS: [&str; 1] = ["VK_LAYER_LUNARG_standard_validation"];
-
 pub fn c_char_to_str<'a>(char_vec: Vec<c_char>) -> String {
     let char_vec = char_vec.into_iter().map(|x| x as u8).collect();
     unsafe {
