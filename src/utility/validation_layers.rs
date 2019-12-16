@@ -1,6 +1,4 @@
 use crate::utility::{common::*, constants::*, vulkanapp::VulkanApp};
-use std::{ffi::CStr, os::raw::c_void, ptr};
-
 use ash::{
     extensions::ext::DebugUtils,
     version::{EntryV1_0, InstanceV1_0},
@@ -10,6 +8,8 @@ use ash::{
         DebugUtilsMessengerCreateInfoEXT, DebugUtilsMessengerEXT, StructureType, FALSE as VK_FALSE,
     },
 };
+use log::{error, info, trace, warn};
+use std::{ffi::CStr, os::raw::c_void, ptr};
 
 impl VulkanApp {
     pub fn check_validation_layer_support(entry: &ash::Entry) -> bool {
@@ -20,13 +20,13 @@ impl VulkanApp {
             .expect("Failed to enumerate Instance Layers Properties!");
 
         if layer_properties.len() <= 0 {
-            eprintln!("No available layers.");
+            error!("No available layers.");
             return false;
         } else {
-            println!("Instance Available Layers: ");
+            info!("Instance Available Layers: ");
             for layer in layer_properties.iter() {
                 let layer_name = c_char_to_str(layer.layer_name.to_vec());
-                println!("\t{}", layer_name);
+                info!("\t{}", layer_name);
             }
         }
 
@@ -105,13 +105,6 @@ unsafe extern "system" fn vulkan_debug_utils_callback(
     p_callback_data: *const DebugUtilsMessengerCallbackDataEXT,
     _p_user_data: *mut c_void,
 ) -> Bool32 {
-    let severity = match message_severity {
-        DebugUtilsMessageSeverityFlagsEXT::VERBOSE => "[Verbose]",
-        DebugUtilsMessageSeverityFlagsEXT::WARNING => "[Warning]",
-        DebugUtilsMessageSeverityFlagsEXT::ERROR => "[Error]",
-        DebugUtilsMessageSeverityFlagsEXT::INFO => "[Info]",
-        _ => "[Unknown]",
-    };
     let types = match message_type {
         DebugUtilsMessageTypeFlagsEXT::GENERAL => "[General]",
         DebugUtilsMessageTypeFlagsEXT::PERFORMANCE => "[Performance]",
@@ -119,7 +112,13 @@ unsafe extern "system" fn vulkan_debug_utils_callback(
         _ => "[Unknown]",
     };
     let message = CStr::from_ptr((*p_callback_data).p_message);
-    println!("[Debug]{}{}{:?}", severity, types, message);
+    match message_severity {
+        DebugUtilsMessageSeverityFlagsEXT::VERBOSE => trace!("{}{:?}", types, message),
+        DebugUtilsMessageSeverityFlagsEXT::WARNING => warn!("{}{:?}", types, message),
+        DebugUtilsMessageSeverityFlagsEXT::ERROR => error!("{}{:?}", types, message),
+        DebugUtilsMessageSeverityFlagsEXT::INFO => info!("{}{:?}", types, message),
+        _ => (),
+    };
 
     VK_FALSE
 }
