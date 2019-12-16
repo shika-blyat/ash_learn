@@ -1,15 +1,18 @@
 use crate::utility::vulkanapp::VulkanApp;
 use ash::{
-    extensions::khr::{Win32Surface, Surface},
-    vk::{StructureType, Win32SurfaceCreateInfoKHR, SurfaceKHR},
-    Entry, Instance, 
+    extensions::khr::{Surface, Win32Surface},
+    vk::{StructureType, SurfaceKHR, Win32SurfaceCreateInfoKHR},
+    Entry, Instance,
 };
 use raw_window_handle::{HasRawWindowHandle, RawWindowHandle};
 use winit::window::Window;
 
 impl VulkanApp {
-    pub unsafe fn create_surface(instance: &Instance, entry: &Entry, window: &Window) -> 
-    (Surface, SurfaceKHR) {
+    pub unsafe fn create_surface(
+        instance: &Instance,
+        entry: &Entry,
+        window: &Window,
+    ) -> (Surface, SurfaceKHR) {
         let raw_window_handle = match window.raw_window_handle() {
             RawWindowHandle::Windows(handle) => handle,
             _ => panic!("Surface creation failed: platforms other than Windows not supported yet"),
@@ -23,7 +26,11 @@ impl VulkanApp {
             ..Default::default()
         };
         let win32_surface_loader = Win32Surface::new(entry, instance);
-        (Surface::new(entry, instance), win32_surface_loader.create_win32_surface(&win32_create_info, None)
-        	.expect("Failed to created surface"))
+        (
+            Surface::new(entry, instance),
+            win32_surface_loader
+                .create_win32_surface(&win32_create_info, None)
+                .expect("Failed to created surface"),
+        )
     }
 }

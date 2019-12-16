@@ -1,10 +1,10 @@
+use crate::utility::constants::*;
 use ash::{
     extensions::{ext::DebugUtils, khr::Surface},
-    vk::{DebugUtilsMessengerEXT, PhysicalDevice, SurfaceKHR},
+    version::{DeviceV1_0, InstanceV1_0},
+    vk::{DebugUtilsMessengerEXT, PhysicalDevice, Queue, SurfaceKHR},
     Device, Entry, Instance,
-    version::{InstanceV1_0, DeviceV1_0},
 };
-use crate::utility::constants::*;
 use winit::window::Window;
 
 pub struct VulkanApp {
@@ -16,19 +16,23 @@ pub struct VulkanApp {
     pub debug_merssager: DebugUtilsMessengerEXT,
     pub physical_device: PhysicalDevice,
     pub logical_device: Device,
+    pub present_queue: Queue,
 }
 
 impl VulkanApp {
     pub fn new(window: &Window) -> VulkanApp {
-        // init vulkan stuff
         let entry = Entry::new().unwrap();
         let instance = VulkanApp::create_instance(&entry);
         let (debug_utils_loader, debug_merssager) = VulkanApp::setup_debug_utils(&entry, &instance);
-        let (surface, surface_khr) = unsafe {
-            VulkanApp::create_surface(&instance, &entry, window)
-        };
+        let (surface, surface_khr) =
+            unsafe { VulkanApp::create_surface(&instance, &entry, window) };
         let physical_device = VulkanApp::pick_physical_device(&instance);
-        let logical_device = VulkanApp::create_logical_device(&physical_device, &instance);
+        let (logical_device, present_queue) = VulkanApp::create_logical_device_and_present_queue(
+            &physical_device,
+            &instance,
+            &surface_khr,
+            &surface,
+        );
         VulkanApp {
             _entry: entry,
             instance,
@@ -38,6 +42,7 @@ impl VulkanApp {
             surface,
             surface_khr,
             logical_device,
+            present_queue,
         }
     }
 }

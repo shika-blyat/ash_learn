@@ -1,7 +1,7 @@
 use crate::utility::{common::*, constants::*, vulkanapp::VulkanApp};
 use ash::{
     extensions::ext::DebugUtils,
-    version::{EntryV1_0},
+    version::EntryV1_0,
     vk::{
         Bool32, DebugUtilsMessageSeverityFlagsEXT, DebugUtilsMessageTypeFlagsEXT,
         DebugUtilsMessengerCallbackDataEXT, DebugUtilsMessengerCreateFlagsEXT,

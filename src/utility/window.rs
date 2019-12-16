@@ -3,8 +3,8 @@ use log::info;
 use winit::{
     event::{Event, WindowEvent},
     event_loop::{ControlFlow, EventLoop},
-    window::Window,
     platform::desktop::EventLoopExtDesktop,
+    window::Window,
 };
 impl VulkanApp {
     pub fn run_loop(&self, window: Window, mut event_loop: EventLoop<()>) {

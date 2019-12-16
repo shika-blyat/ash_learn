@@ -1,7 +1,8 @@
 use crate::utility::vulkanapp::VulkanApp;
 use ash::{
+    extensions::khr::Surface,
     version::InstanceV1_0,
-    vk::{PhysicalDevice, PhysicalDeviceType, QueueFlags, FALSE as VK_FALSE},
+    vk::{PhysicalDevice, PhysicalDeviceType, QueueFlags, SurfaceKHR, FALSE as VK_FALSE},
     Instance,
 };
 use log::info;
@@ -9,11 +10,12 @@ use log::info;
 #[derive(Clone, Debug, PartialEq)]
 pub struct QueueFamilyIndices {
     pub graphics_family: Option<u32>,
+    pub queue_family: Option<u32>,
 }
 
 impl QueueFamilyIndices {
     pub fn is_complete(&self) -> bool {
-        self.graphics_family.is_some()
+        self.graphics_family.is_some() && self.queue_family.is_some()
     }
 }
 
@@ -62,18 +64,30 @@ impl VulkanApp {
         }
         return score;
     }
-    pub fn find_queue_families(device: PhysicalDevice, instance: &Instance) -> QueueFamilyIndices {
+    pub fn find_queue_families(
+        device: PhysicalDevice,
+        instance: &Instance,
+        surface_khr: &SurfaceKHR,
+        surface: &Surface,
+    ) -> QueueFamilyIndices {
         let queue_families_properties =
             unsafe { instance.get_physical_device_queue_family_properties(device) };
         let mut queue_family_indices = QueueFamilyIndices {
             graphics_family: None,
+            queue_family: None,
         };
         let mut i = 0;
         for queue_family in queue_families_properties {
             if queue_family.queue_flags.contains(QueueFlags::GRAPHICS) {
                 queue_family_indices.graphics_family = Some(i);
             }
-            if queue_family_indices.graphics_family.is_some() {
+            let surface_support = unsafe {
+                surface.get_physical_device_surface_support(device, i as u32, *surface_khr)
+            };
+            if surface_support {
+                queue_family_indices.queue_family = Some(i);
+            }
+            if queue_family_indices.is_complete() {
                 break;
             }
             i += 1;
