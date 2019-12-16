@@ -1,4 +1,4 @@
-use crate::utility::{constants::*, vulkanapp::VulkanApp};
+use crate::utility::{vulkanapp::VulkanApp};
 
 use ash::{
     version::InstanceV1_0,
@@ -21,18 +21,12 @@ impl VulkanApp {
             ..Default::default()
         };
         let device_features = unsafe { instance.get_physical_device_features(*physical_device) };
-        let layer_pnames: Vec<*const i8> = REQUIRED_VALIDATION_LAYERS
-            .iter()
-            .map(|x| x.as_ptr() as *const i8)
-            .collect();
         let device_create_info = DeviceCreateInfo {
             s_type: StructureType::DEVICE_CREATE_INFO,
             p_queue_create_infos: &queue_create_info,
             queue_create_info_count: 1,
             p_enabled_features: &device_features,
             enabled_extension_count: 0,
-            enabled_layer_count: REQUIRED_VALIDATION_LAYERS.len() as u32,
-            pp_enabled_layer_names: layer_pnames.as_ptr(),
             ..Default::default()
         };
         unsafe {

@@ -1,7 +1,7 @@
 use crate::utility::{common::*, constants::*, vulkanapp::VulkanApp};
 use ash::{
     extensions::ext::DebugUtils,
-    version::{EntryV1_0, InstanceV1_0},
+    version::{EntryV1_0},
     vk::{
         Bool32, DebugUtilsMessageSeverityFlagsEXT, DebugUtilsMessageTypeFlagsEXT,
         DebugUtilsMessengerCallbackDataEXT, DebugUtilsMessengerCreateFlagsEXT,
@@ -84,18 +84,6 @@ pub fn populate_debug_messenger_create_info() -> DebugUtilsMessengerCreateInfoEX
             | DebugUtilsMessageTypeFlagsEXT::VALIDATION,
         pfn_user_callback: Some(vulkan_debug_utils_callback),
         p_user_data: ptr::null_mut(),
-    }
-}
-
-impl Drop for VulkanApp {
-    fn drop(&mut self) {
-        unsafe {
-            if ENABLE_VALIDATION_LAYER {
-                self.debug_utils_loader
-                    .destroy_debug_utils_messenger(self.debug_merssager, None);
-            }
-            self.instance.destroy_instance(None);
-        }
     }
 }
 
