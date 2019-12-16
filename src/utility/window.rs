@@ -6,9 +6,7 @@ use winit::{
     window::Window,
 };
 impl VulkanApp {
-    pub fn run_loop(&self) {
-        let event_loop = EventLoop::new();
-        let window = Window::new(&event_loop).expect("Window creation failed");
+    pub fn run_loop(&self, window: Window, event_loop: EventLoop<()>) {
         event_loop.run(move |event, _, control_flow| match event {
             Event::EventsCleared => {
                 window.request_redraw();

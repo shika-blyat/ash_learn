@@ -3,11 +3,11 @@ use crate::utility::{constants::*, vulkanapp::VulkanApp};
 use ash::{
     version::InstanceV1_0,
     vk::{DeviceCreateInfo, DeviceQueueCreateInfo, PhysicalDevice, StructureType},
-    Instance, Device
+    Device, Instance,
 };
 
 impl VulkanApp {
-    pub fn create_logical_device(physical_device: &PhysicalDevice, instance: &Instance) -> Device{
+    pub fn create_logical_device(physical_device: &PhysicalDevice, instance: &Instance) -> Device {
         let indices = VulkanApp::find_queue_families(*physical_device, instance);
         let queue_family_index = indices
             .graphics_family
@@ -20,9 +20,7 @@ impl VulkanApp {
             p_queue_priorities: queue_priorities.as_ptr(),
             ..Default::default()
         };
-        let device_features = unsafe{
-            instance.get_physical_device_features(*physical_device)
-        };
+        let device_features = unsafe { instance.get_physical_device_features(*physical_device) };
         let layer_pnames: Vec<*const i8> = REQUIRED_VALIDATION_LAYERS
             .iter()
             .map(|x| x.as_ptr() as *const i8)
@@ -37,8 +35,9 @@ impl VulkanApp {
             pp_enabled_layer_names: layer_pnames.as_ptr(),
             ..Default::default()
         };
-        unsafe{
-            instance.create_device(*physical_device, &device_create_info, None)
+        unsafe {
+            instance
+                .create_device(*physical_device, &device_create_info, None)
                 .expect("Failed to create logical device")
         }
     }
