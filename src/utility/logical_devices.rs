@@ -1,4 +1,4 @@
-use crate::utility::{physical_devices::QueueFamilyIndices, vulkanapp::VulkanApp};
+use crate::utility::{constants::*, physical_devices::QueueFamilyIndices, vulkanapp::VulkanApp};
 
 use ash::{
     extensions::khr::Surface,
@@ -9,6 +9,7 @@ use ash::{
     Device, Instance,
 };
 use std::collections::HashSet;
+use std::os::raw::c_char;
 
 impl VulkanApp {
     pub fn create_logical_device_and_present_queue(
@@ -21,12 +22,15 @@ impl VulkanApp {
             VulkanApp::find_queue_families(*physical_device, instance, surface_khr, surface);
         let queue_create_infos = VulkanApp::create_present_queues(&indices);
         let device_features = unsafe { instance.get_physical_device_features(*physical_device) };
+        let enabled_extension_names: Vec<*const c_char> =
+            DEVICE_EXTENSIONS.iter().map(|x| x.as_ptr() as *const c_char).collect();
         let device_create_info = DeviceCreateInfo {
             s_type: StructureType::DEVICE_CREATE_INFO,
             p_queue_create_infos: queue_create_infos.as_ptr(),
             queue_create_info_count: queue_create_infos.len() as u32,
             p_enabled_features: &device_features,
-            enabled_extension_count: 0,
+            enabled_extension_count: DEVICE_EXTENSIONS.len() as u32,
+            pp_enabled_extension_names: enabled_extension_names.as_ptr(),
             ..Default::default()
         };
         let device = unsafe {

@@ -1,16 +1,11 @@
 use crate::utility::{
     constants::*, validation_layers::populate_debug_messenger_create_info, vulkanapp::VulkanApp,
 };
-#[cfg(all(debug_assertions, target_os = "windows"))]
+#[cfg(all(target_os = "windows"))]
 use ash::extensions::khr::Win32Surface;
-#[cfg(all(
-    debug_assertions,
-    unix,
-    not(target_os = "android"),
-    not(target_os = "macos")
-))]
+#[cfg(all(unix, not(target_os = "android"), not(target_os = "macos")))]
 use ash::extensions::khr::XlibSurface;
-#[cfg(all(debug_assertions, target_os = "macos"))]
+#[cfg(all(target_os = "macos"))]
 use ash::extensions::mvk::MacOSSurface;
 use ash::{version::EntryV1_0, vk, vk_make_version, Entry, Instance};
 use std::{

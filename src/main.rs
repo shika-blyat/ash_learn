@@ -1,10 +1,11 @@
 use ash_test::utility::vulkanapp::VulkanApp;
+use log::info;
 use pretty_env_logger;
 use winit::{event_loop::EventLoop, window::Window};
 
 fn main() {
     init_logger();
-
+    info!("Starting vulkan app !");
     let event_loop = EventLoop::new();
     let window = Window::new(&event_loop).expect("Window creation failed");
 
@@ -13,10 +14,5 @@ fn main() {
 }
 
 fn init_logger() {
-    #[cfg(debug_assertion)]
-    pretty_env_logger::builder()
-        .filter_level(&mut self, LevelFilter::Trace)
-        .init();
-    #[cfg(not(debug_assertion))]
-    pretty_env_logger::init();
+    pretty_env_logger::init_custom_env("ASH_LOG");
 }

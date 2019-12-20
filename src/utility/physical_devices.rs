@@ -1,11 +1,12 @@
-use crate::utility::vulkanapp::VulkanApp;
+use crate::utility::{common::*, constants::*, vulkanapp::VulkanApp};
 use ash::{
     extensions::khr::Surface,
     version::InstanceV1_0,
     vk::{PhysicalDevice, PhysicalDeviceType, QueueFlags, SurfaceKHR, FALSE as VK_FALSE},
     Instance,
 };
-use log::info;
+use log::{debug, info};
+use std::collections::HashSet;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct QueueFamilyIndices {
@@ -46,6 +47,40 @@ impl VulkanApp {
         }
         physical_device
     }
+    pub fn check_device_extension_support(
+        instance: &ash::Instance,
+        physical_device: &PhysicalDevice,
+    ) -> bool {
+        let available_extensions = unsafe {
+            instance
+                .enumerate_device_extension_properties(*physical_device)
+                .expect("Failed to get device extension properties.")
+        };
+
+        let mut available_extension_names = vec![];
+
+        debug!("Available extensions:");
+        for extension in available_extensions.iter() {
+            let extension_name = c_char_to_str((&extension.extension_name).to_vec());
+            debug!(
+                "Name: {}, Version: {}",
+                extension_name, extension.spec_version
+            );
+            available_extension_names.push(extension_name);
+        }
+
+        let mut required_extensions = HashSet::new();
+        for extension in DEVICE_EXTENSIONS.iter() {
+            required_extensions.insert(extension.to_string());
+        }
+
+        for extension_name in available_extension_names.iter() {
+            required_extensions.remove(extension_name);
+        }
+
+        return required_extensions.is_empty();
+    }
+
     pub fn rate_device_suitability(device: PhysicalDevice, instance: &Instance) -> i32 {
         let physical_device_properties = unsafe { instance.get_physical_device_properties(device) };
         let physical_device_features = unsafe { instance.get_physical_device_features(device) };
@@ -59,7 +94,9 @@ impl VulkanApp {
         // Maximum possible size of textures affects graphics quality
         score += physical_device_properties.limits.max_image_dimension2_d as i32;
 
-        if !physical_device_features.geometry_shader == VK_FALSE {
+        if !physical_device_features.geometry_shader == VK_FALSE
+            || !VulkanApp::check_device_extension_support(instance, &device)
+        {
             return 0;
         }
         return score;
