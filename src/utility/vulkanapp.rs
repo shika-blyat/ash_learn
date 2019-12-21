@@ -5,7 +5,9 @@ use ash::{
         khr::{Surface, Swapchain},
     },
     version::{DeviceV1_0, InstanceV1_0},
-    vk::{DebugUtilsMessengerEXT, Image, PhysicalDevice, Queue, SurfaceKHR, SwapchainKHR},
+    vk::{
+        DebugUtilsMessengerEXT, Image, ImageView, PhysicalDevice, Queue, SurfaceKHR, SwapchainKHR,
+    },
     Device, Entry, Instance,
 };
 use winit::window::Window;
@@ -22,7 +24,8 @@ pub struct VulkanApp {
     pub present_queue: Queue,
     pub swapchain_khr: SwapchainKHR,
     pub swapchain: Swapchain,
-    pub swapchain_images: Image,
+    pub swapchain_images: Vec<Image>,
+    pub image_views: Vec<ImageView>,
 }
 
 impl VulkanApp {
@@ -39,13 +42,20 @@ impl VulkanApp {
             &surface_khr,
             &surface,
         );
-        let (swapchain, swapchain_khr) = VulkanApp::create_swapchain(
+        let (swapchain, swapchain_khr, _extent, image_format) = VulkanApp::create_swapchain(
             &physical_device,
             &surface,
             &surface_khr,
             &instance,
             &logical_device,
         );
+        let swapchain_images = unsafe {
+            swapchain
+                .get_swapchain_images(swapchain_khr)
+                .expect("Failed to acquire")
+        };
+        let image_views =
+            VulkanApp::create_image_views(&swapchain_images, &image_format, &logical_device);
         VulkanApp {
             _entry: entry,
             instance,
@@ -58,6 +68,8 @@ impl VulkanApp {
             present_queue,
             swapchain,
             swapchain_khr,
+            swapchain_images,
+            image_views,
         }
     }
 }
@@ -65,6 +77,9 @@ impl VulkanApp {
 impl Drop for VulkanApp {
     fn drop(&mut self) {
         unsafe {
+            for image_view in self.image_views.iter() {
+                self.logical_device.destroy_image_view(*image_view, None);
+            }
             if ENABLE_VALIDATION_LAYER {
                 self.debug_utils_loader
                     .destroy_debug_utils_messenger(self.debug_merssager, None);

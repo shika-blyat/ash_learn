@@ -1,5 +1,6 @@
 mod common;
 pub mod constants;
+pub mod imageviews;
 pub mod instance;
 pub mod logical_devices;
 pub mod physical_devices;

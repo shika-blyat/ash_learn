@@ -10,7 +10,6 @@ use ash::{
 };
 use log::info;
 use std::cmp;
-use std::ffi::c_void;
 use std::ptr;
 
 pub struct SwapChainSupportDetails {
@@ -95,7 +94,7 @@ impl VulkanApp {
         surface_khr: &SurfaceKHR,
         instance: &Instance,
         logical_device: &Device,
-    ) -> (Swapchain, SwapchainKHR) {
+    ) -> (Swapchain, SwapchainKHR, Extent2D, Format) {
         let swapchain_support =
             VulkanApp::query_swapchain_support(*physical_device, surface, surface_khr);
         let surface_format = VulkanApp::choose_swap_surface_format(swapchain_support.formats);
@@ -150,7 +149,7 @@ impl VulkanApp {
             let swapchain_khr = swapchain
                 .create_swapchain(&swapchain_create_info, None)
                 .expect("Failed to create swapchain");
-            (swapchain, swapchain_khr)
+            (swapchain, swapchain_khr, extent, surface_format.format)
         }
     }
 }
