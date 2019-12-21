@@ -5,7 +5,7 @@ use ash::{
     vk::{PhysicalDevice, PhysicalDeviceType, QueueFlags, SurfaceKHR, FALSE as VK_FALSE},
     Instance,
 };
-use log::{debug, info};
+use log::trace;
 use std::collections::HashSet;
 
 #[derive(Clone, Debug, PartialEq)]
@@ -21,7 +21,11 @@ impl QueueFamilyIndices {
 }
 
 impl VulkanApp {
-    pub fn pick_physical_device(instance: &Instance) -> PhysicalDevice {
+    pub fn pick_physical_device(
+        instance: &Instance,
+        surface: &Surface,
+        surface_khr: &SurfaceKHR,
+    ) -> PhysicalDevice {
         let physical_devices = unsafe {
             instance
                 .enumerate_physical_devices()
@@ -34,7 +38,8 @@ impl VulkanApp {
             let mut physical_device = PhysicalDevice::null();
             let mut best_score = 0;
             for device in physical_devices {
-                let score = VulkanApp::rate_device_suitability(device, instance);
+                let score =
+                    VulkanApp::rate_device_suitability(device, instance, surface, surface_khr);
                 if score > best_score {
                     physical_device = device;
                     best_score = score;
@@ -59,12 +64,13 @@ impl VulkanApp {
 
         let mut available_extension_names = vec![];
 
-        debug!("Available extensions:");
+        trace!("Available extensions:");
         for extension in available_extensions.iter() {
             let extension_name = c_char_to_str((&extension.extension_name).to_vec());
-            debug!(
+            trace!(
                 "Name: {}, Version: {}",
-                extension_name, extension.spec_version
+                extension_name,
+                extension.spec_version
             );
             available_extension_names.push(extension_name);
         }
@@ -81,7 +87,12 @@ impl VulkanApp {
         return required_extensions.is_empty();
     }
 
-    pub fn rate_device_suitability(device: PhysicalDevice, instance: &Instance) -> i32 {
+    pub fn rate_device_suitability(
+        device: PhysicalDevice,
+        instance: &Instance,
+        surface: &Surface,
+        surface_khr: &SurfaceKHR,
+    ) -> i32 {
         let physical_device_properties = unsafe { instance.get_physical_device_properties(device) };
         let physical_device_features = unsafe { instance.get_physical_device_features(device) };
         let mut score: i32 = 0;
@@ -94,11 +105,14 @@ impl VulkanApp {
         // Maximum possible size of textures affects graphics quality
         score += physical_device_properties.limits.max_image_dimension2_d as i32;
 
+        let swapchain_support = VulkanApp::query_swapchain_support(device, surface, surface_khr);
         if !physical_device_features.geometry_shader == VK_FALSE
             || !VulkanApp::check_device_extension_support(instance, &device)
+            || (swapchain_support.formats.is_empty() && swapchain_support.present_modes.is_empty())
         {
             return 0;
         }
+
         return score;
     }
     pub fn find_queue_families(
@@ -129,7 +143,6 @@ impl VulkanApp {
             }
             i += 1;
         }
-        info!("Queue family: {:#?}", queue_family_indices);
         queue_family_indices
     }
 }

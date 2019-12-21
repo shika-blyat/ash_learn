@@ -22,8 +22,15 @@ impl VulkanApp {
             VulkanApp::find_queue_families(*physical_device, instance, surface_khr, surface);
         let queue_create_infos = VulkanApp::create_present_queues(&indices);
         let device_features = unsafe { instance.get_physical_device_features(*physical_device) };
-        let enabled_extension_names: Vec<*const c_char> =
-            DEVICE_EXTENSIONS.iter().map(|x| x.as_ptr() as *const c_char).collect();
+        let enabled_extension_names: Vec<*const c_char> = DEVICE_EXTENSIONS
+            .iter()
+            .map(|x| x.as_ptr() as *const c_char)
+            .collect();
+        let pp_enabled_layer_names: Vec<*const c_char> = REQUIRED_VALIDATION_LAYERS
+            .iter()
+            .map(|s| s.as_ptr() as *const c_char)
+            .collect();
+
         let device_create_info = DeviceCreateInfo {
             s_type: StructureType::DEVICE_CREATE_INFO,
             p_queue_create_infos: queue_create_infos.as_ptr(),
@@ -31,6 +38,8 @@ impl VulkanApp {
             p_enabled_features: &device_features,
             enabled_extension_count: DEVICE_EXTENSIONS.len() as u32,
             pp_enabled_extension_names: enabled_extension_names.as_ptr(),
+            enabled_layer_count: REQUIRED_VALIDATION_LAYERS.len() as u32,
+            pp_enabled_layer_names: pp_enabled_layer_names.as_ptr(),
             ..Default::default()
         };
         let device = unsafe {

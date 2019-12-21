@@ -1,5 +1,5 @@
 mod common;
-mod constants;
+pub mod constants;
 pub mod instance;
 pub mod logical_devices;
 pub mod physical_devices;

@@ -1,3 +1,6 @@
+pub const WIDTH: f64 = 800.0;
+pub const HEIGHT: f64 = 500.0;
+
 #[cfg(debug_assertions)]
 pub const ENABLE_VALIDATION_LAYER: bool = true;
 #[cfg(not(debug_assertions))]

@@ -27,8 +27,10 @@ impl VulkanApp {
                 .iter()
                 .map(|&i| CString::new(i).unwrap())
                 .collect();
-            let pp_enabled_layer_names: Vec<*const c_char> =
-                enabled_layer_names.iter().map(|s| s.as_ptr()).collect();
+            let pp_enabled_layer_names: Vec<*const c_char> = enabled_layer_names
+                .iter()
+                .map(|s| s.as_ptr() as *const c_char)
+                .collect();
             let pp_enabled_layer_names = pp_enabled_layer_names.as_ptr();
             let enabled_extension_names = vec![
                 Surface::name(),

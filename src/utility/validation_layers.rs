@@ -23,7 +23,7 @@ impl VulkanApp {
             error!("No available layers.");
             return false;
         } else {
-            info!("Instance Available Layers: ");
+            info!("Available Layers: ");
             for layer in layer_properties.iter() {
                 let layer_name = c_char_to_str(layer.layer_name.to_vec());
                 info!("\t{}", layer_name);
