@@ -1,24 +1,28 @@
 use crate::utility::vulkanapp::VulkanApp;
 use ash::{
-    extensions::khr::{Surface, Win32Surface},
-    vk::{StructureType, SurfaceKHR, Win32SurfaceCreateInfoKHR},
+    extensions::khr::{Surface, Win32Surface, XlibSurface},
+    vk::{StructureType, SurfaceKHR, Win32SurfaceCreateInfoKHR, XlibSurfaceCreateInfoKHR},
     Entry, Instance,
 };
 use raw_window_handle::{HasRawWindowHandle, RawWindowHandle};
 use winit::window::Window;
+use std::os::raw::c_void;
 
 impl VulkanApp {
+    #[cfg(target_os = "windows" )]
     pub unsafe fn create_surface(
         instance: &Instance,
         entry: &Entry,
         window: &Window,
     ) -> (Surface, SurfaceKHR) {
-        let raw_window_handle = match window.raw_window_handle() {
-            RawWindowHandle::Windows(handle) => handle,
-            _ => panic!("Surface creation failed: platforms other than Windows not supported yet"),
+        let window_handle = if let RawWindowHandle::Windows(handle) = window.raw_window_handle() {
+            handle
+        } else {
+            panic!("Cannot get window handle");
         };
-        let hinstance = raw_window_handle.hinstance;
-        let hwnd = raw_window_handle.hwnd;
+        //
+        let hinstance = window_handle.hinstance;
+        let hwnd = window_handle.hwnd;
         let win32_create_info = Win32SurfaceCreateInfoKHR {
             s_type: StructureType::WIN32_SURFACE_CREATE_INFO_KHR,
             hinstance,
@@ -30,6 +34,34 @@ impl VulkanApp {
             Surface::new(entry, instance),
             win32_surface_loader
                 .create_win32_surface(&win32_create_info, None)
+                .expect("Failed to created surface"),
+        )
+    }
+    #[cfg(all(unix, not(target_os = "android"), not(target_os = "macos")))]
+    pub unsafe fn create_surface(
+        instance: &Instance,
+        entry: &Entry,
+        window: &Window,
+    ) -> (Surface, SurfaceKHR) {
+        let window_handle = if let RawWindowHandle::Xlib(handle) = window.raw_window_handle() {
+            handle
+        } else {
+            panic!("Cannot get window handle");
+        };
+        //
+        let window = window_handle.window;
+        let display = window_handle.display as *mut *const c_void;
+        let xlib_create_info = XlibSurfaceCreateInfoKHR {
+            s_type: StructureType::XLIB_SURFACE_CREATE_INFO_KHR,
+            window,
+            dpy: display,
+            ..Default::default()
+        };
+        let win32_surface_loader = XlibSurface::new(entry, instance);
+        (
+            Surface::new(entry, instance),
+            win32_surface_loader
+                .create_xlib_surface(&xlib_create_info, None)
                 .expect("Failed to created surface"),
         )
     }
