@@ -10,7 +10,7 @@ use ash::{
 };
 use std::collections::HashSet;
 use std::ffi::CString;
-use std::os::raw::{c_char};
+use std::os::raw::c_char;
 
 impl VulkanApp {
     pub fn create_logical_device_and_present_queue(

@@ -69,7 +69,8 @@ impl VulkanApp {
             let extension_name = c_char_to_str((&extension.extension_name).to_vec());
             trace!(
                 "Name: {}, Version: {}",
-                extension_name, extension.spec_version
+                extension_name,
+                extension.spec_version
             );
             available_extension_names.push(extension_name);
         }

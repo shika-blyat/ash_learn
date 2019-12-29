@@ -1,16 +1,15 @@
 use crate::utility::vulkanapp::VulkanApp;
 use ash::{
-    extensions::khr::{Surface},
-
-    vk::{StructureType, SurfaceKHR,  },
+    extensions::khr::Surface,
+    vk::{StructureType, SurfaceKHR},
     Entry, Instance,
 };
 
 #[cfg(target_os = "windows")]
-use ash::{vk::Win32SurfaceCreateInfoKHR, extensions::khr::Win32Surface};
+use ash::{extensions::khr::Win32Surface, vk::Win32SurfaceCreateInfoKHR};
 
 #[cfg(all(unix, not(target_os = "android"), not(target_os = "macos")))]
-use ash::{vk::XlibSurfaceCreateInfoKHR, extensions::khr::XlibSurface};
+use ash::{extensions::khr::XlibSurface, vk::XlibSurfaceCreateInfoKHR};
 
 use raw_window_handle::{HasRawWindowHandle, RawWindowHandle};
 use std::os::raw::c_void;
@@ -18,7 +17,7 @@ use winit::window::Window;
 
 impl VulkanApp {
     #[cfg(target_os = "windows")]
-    pub unsafe fn create_surface(
+    pub fn create_surface(
         instance: &Instance,
         entry: &Entry,
         window: &Window,
@@ -46,7 +45,7 @@ impl VulkanApp {
         )
     }
     #[cfg(all(unix, not(target_os = "android"), not(target_os = "macos")))]
-    pub unsafe fn create_surface(
+    pub fn create_surface(
         instance: &Instance,
         entry: &Entry,
         window: &Window,
@@ -66,11 +65,10 @@ impl VulkanApp {
             ..Default::default()
         };
         let win32_surface_loader = XlibSurface::new(entry, instance);
-        (
-            Surface::new(entry, instance),
+        (Surface::new(entry, instance), unsafe {
             win32_surface_loader
                 .create_xlib_surface(&xlib_create_info, None)
-                .expect("Failed to created surface"),
-        )
+                .expect("Failed to created surface")
+        })
     }
 }

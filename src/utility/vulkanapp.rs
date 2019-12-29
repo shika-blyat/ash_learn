@@ -33,8 +33,7 @@ impl VulkanApp {
         let entry = Entry::new().unwrap();
         let instance = VulkanApp::create_instance(&entry);
         let (debug_utils_loader, debug_merssager) = VulkanApp::setup_debug_utils(&entry, &instance);
-        let (surface, surface_khr) =
-            unsafe { VulkanApp::create_surface(&instance, &entry, window) };
+        let (surface, surface_khr) = VulkanApp::create_surface(&instance, &entry, window);
         let physical_device = VulkanApp::pick_physical_device(&instance, &surface, &surface_khr);
         let (logical_device, present_queue) = VulkanApp::create_logical_device_and_present_queue(
             &physical_device,
