@@ -5,11 +5,11 @@ use ash::{
     Entry, Instance,
 };
 use raw_window_handle::{HasRawWindowHandle, RawWindowHandle};
-use winit::window::Window;
 use std::os::raw::c_void;
+use winit::window::Window;
 
 impl VulkanApp {
-    #[cfg(target_os = "windows" )]
+    #[cfg(target_os = "windows")]
     pub unsafe fn create_surface(
         instance: &Instance,
         entry: &Entry,
