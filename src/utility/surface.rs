@@ -1,9 +1,17 @@
 use crate::utility::vulkanapp::VulkanApp;
 use ash::{
-    extensions::khr::{Surface, Win32Surface, XlibSurface},
-    vk::{StructureType, SurfaceKHR, Win32SurfaceCreateInfoKHR, XlibSurfaceCreateInfoKHR},
+    extensions::khr::{Surface},
+
+    vk::{StructureType, SurfaceKHR,  },
     Entry, Instance,
 };
+
+#[cfg(target_os = "windows")]
+use ash::{vk::Win32SurfaceCreateInfoKHR, extensions::khr::Win32Surface};
+
+#[cfg(all(unix, not(target_os = "android"), not(target_os = "macos")))]
+use ash::{vk::XlibSurfaceCreateInfoKHR, extensions::khr::XlibSurface};
+
 use raw_window_handle::{HasRawWindowHandle, RawWindowHandle};
 use std::os::raw::c_void;
 use winit::window::Window;

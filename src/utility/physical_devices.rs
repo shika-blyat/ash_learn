@@ -64,10 +64,10 @@ impl VulkanApp {
 
         let mut available_extension_names = vec![];
 
-        println!("Available extensions:");
+        trace!("Available extensions:");
         for extension in available_extensions.iter() {
             let extension_name = c_char_to_str((&extension.extension_name).to_vec());
-            println!(
+            trace!(
                 "Name: {}, Version: {}",
                 extension_name, extension.spec_version
             );
