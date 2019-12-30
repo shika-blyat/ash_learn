@@ -4,7 +4,8 @@ use ash::{
     version::DeviceV1_0,
     vk::{
         ColorComponentFlags, CullModeFlags, Extent2D, FrontFace, Offset2D,
-        PipelineColorBlendAttachmentState, PipelineInputAssemblyStateCreateInfo,
+        PipelineColorBlendAttachmentState, PipelineColorBlendStateCreateInfo,
+        PipelineInputAssemblyStateCreateInfo, PipelineLayout, PipelineLayoutCreateInfo,
         PipelineMultisampleStateCreateInfo, PipelineRasterizationStateCreateInfo,
         PipelineShaderStageCreateInfo, PipelineVertexInputStateCreateInfo,
         PipelineViewportStateCreateInfo, PolygonMode, PrimitiveTopology, Rect2D, SampleCountFlags,
@@ -16,7 +17,7 @@ use ash::{
 use std::mem;
 
 impl VulkanApp {
-    pub fn create_graphics_pipeline(&mut self, extent: Extent2D, device: &Device) {
+    pub fn create_graphics_pipeline(extent: Extent2D, device: &Device) -> PipelineLayout {
         let frag_shader = include_bytes!("../shaders/frag.spv");
         let vert_shader = include_bytes!("../shaders/vert.spv");
         let frag_module = VulkanApp::create_shader_module(device, frag_shader.to_vec());
@@ -88,9 +89,21 @@ impl VulkanApp {
             blend_enable: VK_FALSE,
             ..Default::default()
         };
+        let colorblending = PipelineColorBlendStateCreateInfo {
+            logic_op_enable: VK_FALSE,
+            attachment_count: 1,
+            p_attachments: &colorblend_attachment,
+            ..Default::default()
+        };
+        let pipeline_layout = PipelineLayoutCreateInfo {
+            ..Default::default()
+        };
         unsafe {
             device.destroy_shader_module(frag_module, None);
             device.destroy_shader_module(vert_module, None);
+            device
+                .create_pipeline_layout(&pipeline_layout, None)
+                .expect("Failed to create pipeline layout")
         }
     }
     fn create_shader_module(device: &Device, bytes: Vec<u8>) -> ShaderModule {

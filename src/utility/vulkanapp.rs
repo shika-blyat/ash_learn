@@ -6,7 +6,8 @@ use ash::{
     },
     version::{DeviceV1_0, InstanceV1_0},
     vk::{
-        DebugUtilsMessengerEXT, Image, ImageView, PhysicalDevice, Queue, SurfaceKHR, SwapchainKHR,
+        DebugUtilsMessengerEXT, Image, ImageView, PhysicalDevice, PipelineLayout, Queue,
+        SurfaceKHR, SwapchainKHR,
     },
     Device, Entry, Instance,
 };
@@ -26,6 +27,7 @@ pub struct VulkanApp {
     pub swapchain: Swapchain,
     pub swapchain_images: Vec<Image>,
     pub image_views: Vec<ImageView>,
+    pub pipeline_layout: PipelineLayout,
 }
 
 impl VulkanApp {
@@ -41,7 +43,7 @@ impl VulkanApp {
             &surface_khr,
             &surface,
         );
-        let (swapchain, swapchain_khr, _extent, image_format) = VulkanApp::create_swapchain(
+        let (swapchain, swapchain_khr, extent, image_format) = VulkanApp::create_swapchain(
             &physical_device,
             &surface,
             &surface_khr,
@@ -55,6 +57,7 @@ impl VulkanApp {
         };
         let image_views =
             VulkanApp::create_image_views(&swapchain_images, &image_format, &logical_device);
+        let pipeline_layout = VulkanApp::create_graphics_pipeline(extent, &logical_device);
         VulkanApp {
             _entry: entry,
             instance,
@@ -69,6 +72,7 @@ impl VulkanApp {
             swapchain_khr,
             swapchain_images,
             image_views,
+            pipeline_layout,
         }
     }
 }
@@ -76,6 +80,8 @@ impl VulkanApp {
 impl Drop for VulkanApp {
     fn drop(&mut self) {
         unsafe {
+            self.logical_device
+                .destroy_pipeline_layout(self.pipeline_layout, None);
             for image_view in self.image_views.iter() {
                 self.logical_device.destroy_image_view(*image_view, None);
             }
